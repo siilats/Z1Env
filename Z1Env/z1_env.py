@@ -1,6 +1,8 @@
 import copy
 from typing import Optional
-
+import sys
+# on arm installed as robotpck source pinocchio there
+sys.path.append('/usr/local/lib/python3/dist-packages')
 import numpy as np
 import pinocchio as pin
 import pybullet as p
@@ -232,7 +234,7 @@ class Z1Sim(Env):
 
 
 def main():
-    env = Z1Sim(render_mode="human")
+    env = Z1Sim(render_mode="rgb_array")
     info = env.reset()
 
     while True:
