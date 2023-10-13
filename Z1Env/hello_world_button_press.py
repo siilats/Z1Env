@@ -1,4 +1,3 @@
-import argparse
 import time
 
 import numpy as np
@@ -10,33 +9,39 @@ from Z1Env.z1_env import Z1Sim
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reachable", action="store_true", default=False)
-    args = parser.parse_args()
-
     env = Z1Sim(render_mode="human")
     info = env.reset()
 
     # set desired end-effector position and orientation
     p_des = np.array([0.5, 0.0, 0.5])
-    R_des = pin.rpy.rpyToMatrix(np.pi / 2, -np.pi / 4, 0.0)
+    R_des = pin.rpy.rpyToMatrix(0.0, 0.0, 0.0)
 
     package_directory = getDataPath()
     urdf_search_path = package_directory + "/robots"
     p.setAdditionalSearchPath(urdf_search_path)
 
-    target = p.loadURDF("target.urdf", useFixedBase=True)
-    p.resetBasePositionAndOrientation(target, p_des.tolist(), [0, 0, 0, 1])
+    button = p.loadURDF("button.urdf", useFixedBase=True)
+    p.resetBasePositionAndOrientation(
+        button, p_des.tolist(), [0, np.sin(-np.pi / 4), 0, np.cos(-np.pi / 4)]
+    )
 
-    if not args.reachable:
-        block = p.loadURDF("block.urdf", useFixedBase=True)
-        p.resetBasePositionAndOrientation(block, p_des.tolist(), [0, 0, 0, 1])
+    p.setJointMotorControl2(button, 0, controlMode=p.VELOCITY_CONTROL, force=0)
+    p.setJointMotorControl2(
+        button,
+        0,
+        p.POSITION_CONTROL,
+        targetPosition=0.02,
+        force=0.1,
+        maxVelocity=100,
+        positionGain=0.01,
+        velocityGain=0.0,
+    )
 
     for i in range(20000):
         # compute end-effector velocity
         v_EE = info["J_EE"] @ info["dq"][:, np.newaxis]
 
-        # compute orientation error
+        # compute orientation error in the world frame
         R_error = R_des @ info["R_EE"].T
         ori_error = pin.log3(R_error)
 
@@ -45,9 +50,15 @@ def main():
 
         # concatenate position and orientation error
         error = np.concatenate((pos_error, ori_error), axis=0)[:, np.newaxis]
+        pos_error = np.linalg.norm(error[:3])
 
         # set PD gains
-        Kp = np.diag([20, 20, 20, 2, 2, 2])
+        if pos_error >= 0.025:
+            Kp = np.diag([10, 10, 10, 2, 2, 2])
+        else:
+            Kp_pos = 1.0 / pos_error
+            Kp = np.diag([Kp_pos, Kp_pos, Kp_pos, 2, 2, 2])
+
         Kd = np.diag([0.1, 0.1, 0.1, 0.01, 0.01, 0.01])
 
         # set desired velocity to zero
