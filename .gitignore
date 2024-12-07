@@ -171,3 +171,4 @@ cython_debug/
 /.idea/jupyter-settings.xml
 /.idea/misc.xml
 /.idea/vcs.xml
+mujoco/

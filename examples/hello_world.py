@@ -8,7 +8,7 @@ import sys
 # on arm installed as robotpck source pinocchio there
 sys.path.append('/usr/local/lib/python3/dist-packages')
 
-from Z1Env.z1_env import Z1Sim
+from Z1Env import Z1Sim
 
 
 def main():
