@@ -4,3 +4,4 @@ gymnasium
 Z1Env
 setuptools
 pin
+proxsuite
